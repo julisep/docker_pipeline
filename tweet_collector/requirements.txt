@@ -1,0 +1,4 @@
+tweepy
+SQLAlchemy
+psycopg2-binary
+pymongo
