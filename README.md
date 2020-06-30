@@ -8,9 +8,9 @@ A docker-compose pipeline is built with the following tasks:
 - 4 Store result in a Postgres database
 - 5 Create a slack bot
 
-To run this pipeline access to the Twitter API is required.Please note that this script assumes you have a file called <config.py>
-which stores the 4 required authentication tokens located in the folder <tweet_collector/>:
-       1. CONSUMER_API_KEY
-       2. CONSUMER_API_SECRET
-       3. ACCESS_TOKEN
-       4. ACCESS_TOKEN_SECRET
+To run this pipeline access to the Twitter API is required.Please note that this script assumes you have a file called ‘config.py‘
+which stores the 4 required authentication tokens located in the folder ‘tweet_collector/‘:
+1. CONSUMER_API_KEY
+2. CONSUMER_API_SECRET
+3. ACCESS_TOKEN
+4. ACCESS_TOKEN_SECRET
