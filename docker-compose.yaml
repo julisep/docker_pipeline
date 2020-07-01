@@ -11,8 +11,8 @@ services:
     ports:
       - 27018:27017 # port_on_your_local_machine:default_port_of_mongo
 
-  # etl_job:
-  #   build: etl_job/
+  etl_job:
+    build: etl_job/
 
   postgres_db:
     image: postgres
