@@ -48,9 +48,8 @@ class TwitterListener(StreamListener):
         'timestamp': timestamp
         }
 
-        logging.warning('INCOMING TWEET!')
         tweets.insert(tweet)
-        logging.warning('SUCCESSFULLY ADDED TO MONGO DB!')
+        logging.warning(f'SUCCESSFULLY ADDED TIMESTAMP {tweet["timestamp"]} TO MONGO DB!')
 
 
     def on_error(self, status):

@@ -40,9 +40,13 @@ engine = create_engine('postgres://postgres:xxxx@postgres_db:5432/postgres')
 s = SentimentIntensityAnalyzer()
 
 
-def extract():
+def extract(last_timestamp):
     '''Extracts all tweets from the MongoDB database'''
-    extracted_tweets = list(tweets_mongo.find({"created_at" : {"$gt" : last_timestamp}}))
+    extracted_tweets = list(tweets_mongo.find({"timestamp" : {"$gt" : last_timestamp}}))
+    #{"timestamp" : {"$exists" : True }}))
+    #{"$gt" : last_timestamp}}))
+    logging.critical(f'SUCCESSFULLY EXTRACTED {len(extracted_tweets)}')
+    logging.critical(f'LAST TIMESTAMP {last_timestamp}')
     return extracted_tweets
 
 
@@ -54,9 +58,9 @@ def transform(extracted_tweets):
     transformed_tweets = []
     for tweet in extracted_tweets:
         # tweet is a dictionary
-        # sentiment = s.polarity_scores(tweet['text'])
-        # tweet['sentiment_score'] = sentiment['compound']
-        tweet['sentiment_score'] = 1 # must be calcualted here
+        sentiment = s.polarity_scores(tweet['text'])
+        tweet['sentiment_score'] = sentiment['compound']
+        #tweet['sentiment_score'] = 1 # must be calcualted here
         transformed_tweets.append(tweet)
     return transformed_tweets
 
@@ -68,7 +72,7 @@ def load(transformed_tweets):
         insert_query = "INSERT INTO tweets VALUES (%s, %s, %s);"
         data = [tweet["name"], tweet["text"], tweet["sentiment_score"]]
         engine.execute(insert_query, data)
-    logging.critical('SUCCESSFULLY ADDED TRANSFORMED TWEETS TO POSTGRES DB!')
+    logging.critical(f'SUCCESSFULLY ADDED TRANSFORMED {len(transformed_tweets)} TWEETS TO POSTGRES DB!')
 
 # >>> SQL = "INSERT INTO authors (name) VALUES (%s);" # Note: no quotes
 # >>> data = ("O'Reilly", )
@@ -83,11 +87,11 @@ sentiment_score TEXT
 """
 engine.execute(create_query)
 
-last_timestamp = datetime.today()
+last_timestamp = datetime.strptime('2020-07-01 00:37:33', '%Y-%m-%d %H:%M:%S')
 
 # Until we stop the container or an error returns, do the stuff
 while True:
-    extracted_tweets = extract()
+    extracted_tweets = extract(last_timestamp)
     transformed_tweets = transform(extracted_tweets)
     load(transformed_tweets)
     time.sleep(60)

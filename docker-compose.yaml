@@ -13,6 +13,9 @@ services:
 
   etl_job:
     build: etl_job/
+    depends_on:
+      - mongo_db
+      - postgres_db
 
   postgres_db:
     image: postgres
