@@ -2,6 +2,7 @@ import config
 from tweepy import OAuthHandler, Stream
 from tweepy.streaming import StreamListener
 import json
+from datetime import datetime
 import logging
 from pymongo import MongoClient
 
@@ -39,9 +40,12 @@ class TwitterListener(StreamListener):
             if 'extended_tweet' in r:
                 text =  r['extended_tweet']['full_text']
 
+        timestamp = datetime.strptime(t['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
+
         tweet = {
         'text': text,
         'name': t['user']['screen_name'],
+        'timestamp': timestamp
         }
 
         logging.warning('INCOMING TWEET!')

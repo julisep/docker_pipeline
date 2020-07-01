@@ -18,8 +18,10 @@ We will extract tweets from MongoDB, transform the JSON like objects into entrie
 
 import logging
 import time
+from datetime import datetime
 from pymongo import MongoClient
 from sqlalchemy import create_engine
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 # Connection to MongoDB
 client = MongoClient(host='mongo_db', port=27017)
@@ -34,10 +36,16 @@ engine = create_engine('postgres://postgres:xxxx@postgres_db:5432/postgres')
 # for port, insert internal port of the container
 # default database in postgres is called 'postgres'
 
+#Sentiment Analysis
+s = SentimentIntensityAnalyzer()
+
+
 def extract():
     '''Extracts all tweets from the MongoDB database'''
-    extracted_tweets = list(tweets_mongo.find())
+    extracted_tweets = list(tweets_mongo.find({"created_at" : {"$gt" : last_timestamp}}))
     return extracted_tweets
+
+
 
 def transform(extracted_tweets):
     '''
@@ -46,6 +54,8 @@ def transform(extracted_tweets):
     transformed_tweets = []
     for tweet in extracted_tweets:
         # tweet is a dictionary
+        # sentiment = s.polarity_scores(tweet['text'])
+        # tweet['sentiment_score'] = sentiment['compound']
         tweet['sentiment_score'] = 1 # must be calcualted here
         transformed_tweets.append(tweet)
     return transformed_tweets
@@ -55,8 +65,8 @@ def load(transformed_tweets):
     ''' Load transformed data into the postgres database'''
     for tweet in transformed_tweets:
         # insert_query = f"""INSERT INTO tweets VALUES ('{tweet['username']}', '{tweet['text']}', '{tweet['sentiment_score']}');"""
-        data = [tweet["name"], tweet["text"], tweet["sentiment_score"]]
         insert_query = "INSERT INTO tweets VALUES (%s, %s, %s);"
+        data = [tweet["name"], tweet["text"], tweet["sentiment_score"]]
         engine.execute(insert_query, data)
     logging.critical('SUCCESSFULLY ADDED TRANSFORMED TWEETS TO POSTGRES DB!')
 
@@ -72,6 +82,8 @@ sentiment_score TEXT
 );
 """
 engine.execute(create_query)
+
+last_timestamp = datetime.today()
 
 # Until we stop the container or an error returns, do the stuff
 while True:
