@@ -87,27 +87,12 @@ sentiment_score TEXT
 """
 engine.execute(create_query)
 
-last_timestamp = datetime.strptime('2020-07-01 00:37:33', '%Y-%m-%d %H:%M:%S')
+last_timestamp = datetime.strptime('1970-01-01 00:00:00', '%Y-%m-%d %H:%M:%S')
 
 # Until we stop the container or an error returns, do the stuff
 while True:
     extracted_tweets = extract(last_timestamp)
     transformed_tweets = transform(extracted_tweets)
     load(transformed_tweets)
+    last_timestamp = extracted_tweets[-1]['timestamp']
     time.sleep(60)
-
-'''
-In the code as it is written right now, the whole collection of documents from the MOngoDB is extracted in every single run of the ETL process and is transformed and loaded into the Postgres database.
-That means that we will have a lot of duplicates in the Postgres Database.
-
-Easiest fix:
-- only load the last tweet
-
-A bit more elaborate fixes:
-- Introduce the timestamp into the MongoDB database and onyl query the tweets that have not been extracted in the last run.
-- If you run the tweepy, you get a data field called 'created_at' that we could use
-
-- You could tag the extracted tweets in the MongoDB
-
-- You could drop the Postgres Database Table each time
-'''
