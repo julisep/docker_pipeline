@@ -3,8 +3,6 @@ from tweepy import OAuthHandler, Stream
 from tweepy.streaming import StreamListener
 import json
 import logging
-import pprint
-from sqlalchemy import create_engine
 from pymongo import MongoClient
 
 def authenticate():
@@ -43,13 +41,12 @@ class TwitterListener(StreamListener):
 
         tweet = {
         'text': text,
-        'username': t['user']['screen_name'],
-        'followers_count': t['user']['followers_count']
+        'name': t['user']['screen_name'],
         }
 
         logging.warning('INCOMING TWEET!')
         tweets.insert(tweet)
-        logging.warning('SUCCESSFULLY ADDED TO DB!')
+        logging.warning('SUCCESSFULLY ADDED TO MONGO DB!')
 
 
     def on_error(self, status):
@@ -64,20 +61,7 @@ client = MongoClient(host='mongo_db', port=27017)
 db = client.twitter_data
 tweets = db.tweets
 
-# Connection to Postgres
-#engine = create_engine('postgres://postgres:xxxx@my_database:5432/postgres')
-# user:password@host:port/my_database
-# for host insert name of the service defined in docker-compose.yaml
-# user and password are also defined in docker-compose.yaml
-# for port, insert internal port of the container as defined in docker-compose.yaml
-# default database in postgres is called 'postgres'
-# create_query = """
-# CREATE TABLE IF NOT EXISTS tweets (
-# user_name TEXT,
-# tweet_text TEXT
-# );
-# """
-#engine.execute(create_query)
+
 
 if __name__ == '__main__':
 

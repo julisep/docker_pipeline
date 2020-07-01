@@ -6,8 +6,8 @@ WORKDIR /app
 COPY requirements.txt /app
 RUN pip install --trusted-host pypi.python.org -r requirements.txt
 
-ADD get_tweets.py /app
-ADD config.py /app
+COPY get_tweets.py /app
+COPY config.py /app
 
 # Run app.py when the container launches
 CMD ["python", "get_tweets.py"]
