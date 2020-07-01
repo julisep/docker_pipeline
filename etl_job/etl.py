@@ -23,33 +23,15 @@ from pymongo import MongoClient
 from sqlalchemy import create_engine
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-# Connection to MongoDB
-client = MongoClient(host='mongo_db', port=27017)
-db = client.twitter_data # access database
-tweets_mongo = db.tweets # access collection
 
-# Connection to Postgres
-engine = create_engine('postgres://postgres:xxxx@postgres_db:5432/postgres')
-# user:password@host:port/my_database
-# for host insert name of the service defined in docker-compose.yaml
-# user and password are also defined in docker-compose.yaml
-# for port, insert internal port of the container
-# default database in postgres is called 'postgres'
-
-#Sentiment Analysis
-s = SentimentIntensityAnalyzer()
 
 
 def extract(last_timestamp):
     '''Extracts all tweets from the MongoDB database'''
     extracted_tweets = list(tweets_mongo.find({"timestamp" : {"$gt" : last_timestamp}}))
-    #{"timestamp" : {"$exists" : True }}))
-    #{"$gt" : last_timestamp}}))
     logging.critical(f'SUCCESSFULLY EXTRACTED {len(extracted_tweets)}')
     logging.critical(f'LAST TIMESTAMP {last_timestamp}')
     return extracted_tweets
-
-
 
 def transform(extracted_tweets):
     '''
@@ -60,36 +42,46 @@ def transform(extracted_tweets):
         # tweet is a dictionary
         sentiment = s.polarity_scores(tweet['text'])
         tweet['sentiment_score'] = sentiment['compound']
-        #tweet['sentiment_score'] = 1 # must be calcualted here
         transformed_tweets.append(tweet)
     return transformed_tweets
-
 
 def load(transformed_tweets):
     ''' Load transformed data into the postgres database'''
     for tweet in transformed_tweets:
-        # insert_query = f"""INSERT INTO tweets VALUES ('{tweet['username']}', '{tweet['text']}', '{tweet['sentiment_score']}');"""
         insert_query = "INSERT INTO tweets VALUES (%s, %s, %s);"
         data = [tweet["name"], tweet["text"], tweet["sentiment_score"]]
         engine.execute(insert_query, data)
     logging.critical(f'SUCCESSFULLY ADDED TRANSFORMED {len(transformed_tweets)} TWEETS TO POSTGRES DB!')
 
-# >>> SQL = "INSERT INTO authors (name) VALUES (%s);" # Note: no quotes
-# >>> data = ("O'Reilly", )
-# >>> cur.execute(SQL, data) # Note: no % operator
 
+
+# Wait for databases to be ready
+time.sleep(10)
+# Connection to MongoDB
+client = MongoClient(host='mongo_db', port=27017)
+db = client.twitter_data # access database
+tweets_mongo = db.tweets # access collection
+
+# Connection to Postgres
+engine = create_engine('postgres://postgres:xxxx@postgres_db:5432/postgres')
+
+# Instantiate Sentiment Analyzer
+s = SentimentIntensityAnalyzer()
+
+# Create table in postgres database if it doesn't exist yet
 create_query = """
 CREATE TABLE IF NOT EXISTS tweets (
 name TEXT,
 text TEXT,
-sentiment_score TEXT
+sentiment_score REAL
 );
 """
 engine.execute(create_query)
 
+# Instantiate last timestamp
 last_timestamp = datetime.strptime('1970-01-01 00:00:00', '%Y-%m-%d %H:%M:%S')
 
-# Until we stop the container or an error returns, do the stuff
+# Until we stop the container or an error returns, do all the stuff
 while True:
     extracted_tweets = extract(last_timestamp)
     transformed_tweets = transform(extracted_tweets)

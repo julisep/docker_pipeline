@@ -4,7 +4,11 @@ from tweepy.streaming import StreamListener
 import json
 from datetime import datetime
 import logging
+import time
 from pymongo import MongoClient
+
+
+
 
 def authenticate():
     """Function for handling Twitter Authentication. Please note
@@ -26,12 +30,9 @@ def authenticate():
 class TwitterListener(StreamListener):
 
     def on_data(self, data):
-
         """Whatever we put in this method defines what is done with
         every single tweet as it is intercepted in real-time"""
-
         t = json.loads(data) #t is just a regular python dictionary.
-
         text = t['text']
         if 'extended_tweet' in t:
             text =  t['extended_tweet']['full_text']
@@ -39,35 +40,33 @@ class TwitterListener(StreamListener):
             r = t['retweeted_status']
             if 'extended_tweet' in r:
                 text =  r['extended_tweet']['full_text']
-
         timestamp = datetime.strptime(t['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
-
         tweet = {
         'text': text,
         'name': t['user']['screen_name'],
         'timestamp': timestamp
         }
-
         tweets.insert(tweet)
         logging.warning(f'SUCCESSFULLY ADDED TIMESTAMP {tweet["timestamp"]} TO MONGO DB!')
-
 
     def on_error(self, status):
         if status == 420:
             print(status)
             return False
 
+
+
+
+# Wait for MongoDB to be ready
+time.sleep(10)
+
 # Connection to mongoDb
 client = MongoClient(host='mongo_db', port=27017)
-# host mongo_db indicates that we are talking directly to the container mongo_db
-# of the docker-compose pipeline
 db = client.twitter_data
 tweets = db.tweets
 
-
-
+# Get the tweets
 if __name__ == '__main__':
-
     auth = authenticate()
     listener = TwitterListener()
     stream = Stream(auth, listener)
