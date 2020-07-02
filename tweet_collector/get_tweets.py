@@ -20,8 +20,7 @@ def authenticate():
        3. ACCESS_TOKEN
        4. ACCESS_TOKEN_SECRET
 
-    See course material for instructions on getting your own Twitter credentials.
-    """
+        """
     auth = OAuthHandler(config.CONSUMER_API_KEY, config.CONSUMER_API_SECRET)
     auth.set_access_token(config.ACCESS_TOKEN, config.ACCESS_TOKEN_SECRET)
 
@@ -32,7 +31,7 @@ class TwitterListener(StreamListener):
     def on_data(self, data):
         """Whatever we put in this method defines what is done with
         every single tweet as it is intercepted in real-time"""
-        t = json.loads(data) #t is just a regular python dictionary.
+        t = json.loads(data)
         text = t['text']
         if 'extended_tweet' in t:
             text =  t['extended_tweet']['full_text']
@@ -47,23 +46,25 @@ class TwitterListener(StreamListener):
         'timestamp': timestamp
         }
         tweets.insert(tweet)
-        logging.warning(f'SUCCESSFULLY ADDED TIMESTAMP {tweet["timestamp"]} TO MONGO DB!')
+        logging.warning(f'SUCCESSFULLY ADDED TWEET WITH TIMESTAMP {tweet["timestamp"]} TO MONGO DB!')
 
     def on_error(self, status):
         if status == 420:
             print(status)
             return False
 
-def try_database(func, **kwargs, max_tries, sleep_time):
+def try_database(func, max_tries, sleep_time):
     '''Tries to call a function a number of times.
         func = function that returns database connection
         max_tries = maximum number of attempts
         sleep_time = time to wait until next attempt
     '''
     for i in range(max_tries):
+        logging.critical(f'Try to connect to database number: {i+1}')
         try:
-            return func(**kwargs)
+            return func()
         except:
+            logging.warning('Failed to access database. Will try again in {sleep_time} s.')
             time.sleep(sleep_time)
     raise Exception("Couldn't connect to database. Maximum tries exceded.")
 
@@ -71,8 +72,8 @@ def try_database(func, **kwargs, max_tries, sleep_time):
 
 
 # Connection to mongoDb
-client = try_database(MongoClient, host='mongo_db', port=27017, 5, 10)
 #client = MongoClient(host='mongo_db', port=27017)
+client = try_database(lambda: MongoClient(host='mongo_db', port=27017), 5, 10)
 db = client.twitter_data
 tweets = db.tweets
 
@@ -81,4 +82,4 @@ if __name__ == '__main__':
     auth = authenticate()
     listener = TwitterListener()
     stream = Stream(auth, listener)
-    stream.filter(track=['catalysis'], languages=['en'])
+    stream.filter(track=['berlin'], languages=['en'])
