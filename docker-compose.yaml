@@ -1,18 +1,22 @@
 version: '3'
 
 services:
+
+# 1. container collects tweets
   tweet_collector:
     build: tweet_collector/
     depends_on:
       - mongo_db
     volumes:
-      - ./tweet_collector:/app 
+      - ./tweet_collector:/app
 
+# 2. container runs a mongo database for tweets
   mongo_db:
     image: mongo
     ports:
       - 27018:27017 # port_on_your_local_machine:default_port_of_mongo
 
+# 3. container performs ETL task calculating sentiment
   etl_job:
     build: etl_job/
     depends_on:
@@ -21,6 +25,7 @@ services:
     volumes:
       - ./etl_job:/app
 
+# 4. container runs postgres database where transformed tweets are stored
   postgres_db:
     image: postgres
     environment:
@@ -29,11 +34,14 @@ services:
     ports:
       - 5555:5432
 
+# 5. container runs a slack bot
+  slack_bot:
+    build: slack_bot/
+    volumes:
+      - ./slack_bot:/app
+
   # airflow:
   #   image: puckel/docker-airflow
   #   ports:
   #     - 8081:8080
   #   command: ["webserver", "scheduler"]
-
-  # slack_bot:
-  #   build: slack_bot/

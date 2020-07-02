@@ -29,7 +29,7 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 def extract(last_timestamp):
     '''Extracts all tweets from the MongoDB database'''
     extracted_tweets = list(tweets_mongo.find({"timestamp" : {"$gt" : last_timestamp}}))
-    logging.critical(f'SUCCESSFULLY EXTRACTED {len(extracted_tweets)}')
+    logging.critical(f'EXTRACTED {len(extracted_tweets)} TWEETS FROM MONGO DB')
     logging.critical(f'LAST TIMESTAMP {last_timestamp}')
     return extracted_tweets
 
@@ -51,9 +51,20 @@ def load(transformed_tweets):
         insert_query = "INSERT INTO tweets VALUES (%s, %s, %s);"
         data = [tweet["name"], tweet["text"], tweet["sentiment_score"]]
         engine.execute(insert_query, data)
-    logging.critical(f'SUCCESSFULLY ADDED TRANSFORMED {len(transformed_tweets)} TWEETS TO POSTGRES DB!')
+    logging.critical(f'ADDED {len(transformed_tweets)} TRANSFORMED TWEETS TO POSTGRES DB')
 
-
+def try_times(func, max_tries, sleep_time):
+    '''Tries to call a function a number of times.
+        func = function that returns object
+        max_tries = maximum number of attempts
+        sleep_time = time to wait until next attempt
+    '''
+    for i in range(max_tries):
+        try:
+            return func()
+        except:
+            time.sleep(sleep_time)
+    raise Exception("Maximum tries exceded.")
 
 # Wait for databases to be ready
 time.sleep(10)
@@ -84,7 +95,8 @@ last_timestamp = datetime.strptime('1970-01-01 00:00:00', '%Y-%m-%d %H:%M:%S')
 # Until we stop the container or an error returns, do all the stuff
 while True:
     extracted_tweets = extract(last_timestamp)
-    transformed_tweets = transform(extracted_tweets)
-    load(transformed_tweets)
-    last_timestamp = extracted_tweets[-1]['timestamp']
+    if len(extracted_tweets) != 0:
+        transformed_tweets = transform(extracted_tweets)
+        load(transformed_tweets)
+        last_timestamp = extracted_tweets[-1]['timestamp']
     time.sleep(60)

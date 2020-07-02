@@ -54,14 +54,25 @@ class TwitterListener(StreamListener):
             print(status)
             return False
 
+def try_database(func, **kwargs, max_tries, sleep_time):
+    '''Tries to call a function a number of times.
+        func = function that returns database connection
+        max_tries = maximum number of attempts
+        sleep_time = time to wait until next attempt
+    '''
+    for i in range(max_tries):
+        try:
+            return func(**kwargs)
+        except:
+            time.sleep(sleep_time)
+    raise Exception("Couldn't connect to database. Maximum tries exceded.")
 
 
 
-# Wait for MongoDB to be ready
-time.sleep(10)
 
 # Connection to mongoDb
-client = MongoClient(host='mongo_db', port=27017)
+client = try_database(MongoClient, host='mongo_db', port=27017, 5, 10)
+#client = MongoClient(host='mongo_db', port=27017)
 db = client.twitter_data
 tweets = db.tweets
 
@@ -70,4 +81,4 @@ if __name__ == '__main__':
     auth = authenticate()
     listener = TwitterListener()
     stream = Stream(auth, listener)
-    stream.filter(track=['ikea'], languages=['en'])
+    stream.filter(track=['catalysis'], languages=['en'])
